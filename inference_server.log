@@ -1,0 +1,20 @@
+/app/inference_server.py:21: DeprecationWarning:
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+  @app.on_event("startup")
+INFO:     Started server process [11491]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5000 (Press CTRL+C to quit)
+Loading model from ./Sheikh-ABF...
+Model loaded on cpu
+INFO:     127.0.0.1:51544 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51550 - "POST /generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51556 - "POST /generate HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11491]

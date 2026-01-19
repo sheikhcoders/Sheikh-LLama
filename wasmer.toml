@@ -1,0 +1,17 @@
+[package]
+name = "likhonsheikh/sheikh-llama"
+version = "4.5.0"
+description = "Sheikh Assistant - Artificial Bangla Foundation"
+license = "MIT"
+
+[[command]]
+name = "php"
+module = "php"
+
+[[module]]
+source = "https://github.com/wasmer-python/php-wasm/releases/download/v0.1.0/php-8.3.wasm"
+name = "php"
+abi = "wasi"
+
+[fs]
+"/" = "."
