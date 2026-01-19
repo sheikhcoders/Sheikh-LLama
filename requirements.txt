@@ -5,3 +5,4 @@ sentencepiece
 fastapi
 uvicorn
 pydantic
+httpx

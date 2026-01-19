@@ -1,19 +1,21 @@
 <?php
 
-header('Content-Type: application/json');
-
 // Simple Router
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 $path = parse_url($request_uri, PHP_URL_PATH);
 
 if ($path === '/' || $path === '/index.php') {
+    header('Content-Type: text/html; charset=UTF-8');
     include 'index.php';
     exit;
 } elseif ($path === '/generate') {
+    header('Content-Type: application/json');
     handleGenerate();
 } elseif ($path === '/health') {
+    header('Content-Type: application/json');
     echo json_encode(['status' => 'ok', 'model' => 'Sheikh-ABF']);
 } elseif ($path === '/info') {
+    header('Content-Type: application/json');
     $config_file = 'Sheikh-ABF/config.json';
     if (file_exists($config_file)) {
         $config = json_decode(file_get_contents($config_file), true);
@@ -48,7 +50,8 @@ function handleGenerate() {
     }
 
     // Call Python FastAPI server
-    $url = 'http://127.0.0.1:5000/generate';
+    $port = getenv('PORT') ?: '8000';
+    $url = "http://127.0.0.1:$port/generate_internal";
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $input);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
