@@ -6,7 +6,10 @@ header('Content-Type: application/json');
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 $path = parse_url($request_uri, PHP_URL_PATH);
 
-if ($path === '/generate') {
+if ($path === '/' || $path === '/index.php') {
+    include 'index.php';
+    exit;
+} elseif ($path === '/generate') {
     handleGenerate();
 } elseif ($path === '/health') {
     echo json_encode(['status' => 'ok', 'model' => 'Sheikh-ABF']);
