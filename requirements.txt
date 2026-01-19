@@ -6,3 +6,5 @@ fastapi
 uvicorn
 pydantic
 httpx
+pillow
+python-multipart

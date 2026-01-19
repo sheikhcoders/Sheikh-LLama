@@ -127,8 +127,43 @@
             border: 1px solid var(--border-color);
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
             display: flex;
-            align-items: flex-end;
+            flex-direction: column;
             padding: 0.5rem;
+        }
+
+        .input-controls {
+            display: flex;
+            align-items: flex-end;
+            width: 100%;
+        }
+
+        #image-preview-container {
+            display: none;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        #image-preview {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            left: 145px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            cursor: pointer;
+            font-size: 12px;
         }
 
         #user-input {
@@ -204,8 +239,22 @@
 
     <footer>
         <div class="input-area">
-            <textarea id="user-input" placeholder="এখানে লিখুন..." rows="1"></textarea>
-            <button id="send-btn">পাঠান</button>
+            <div id="image-preview-container">
+                <img id="image-preview" src="" alt="Preview">
+                <div class="remove-image" onclick="clearImage()">×</div>
+            </div>
+            <div class="input-controls">
+                <label for="image-upload" style="cursor:pointer; padding: 0.75rem; color: var(--primary-color);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </label>
+                <input type="file" id="image-upload" accept="image/*" style="display:none">
+                <textarea id="user-input" placeholder="এখানে লিখুন..." rows="1"></textarea>
+                <button id="send-btn">পাঠান</button>
+            </div>
         </div>
         <div class="status-info">
             <span id="status-dot" class="status-dot"></span>
@@ -219,12 +268,36 @@
         const sendBtn = document.getElementById('send-btn');
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
+        const imageUpload = document.getElementById('image-upload');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+
+        let selectedFile = null;
 
         // Auto-resize textarea
         userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
+
+        imageUpload.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                selectedFile = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(selectedFile);
+            }
+        });
+
+        function clearImage() {
+            selectedFile = null;
+            imageUpload.value = '';
+            imagePreviewContainer.style.display = 'none';
+            imagePreview.src = '';
+        }
 
         async function checkStatus() {
             try {
@@ -264,11 +337,14 @@
 
         async function sendMessage() {
             const message = userInput.value.trim();
-            if (!message || sendBtn.disabled) return;
+            if (!message && !selectedFile || sendBtn.disabled) return;
 
-            appendMessage('user', message);
+            const currentFile = selectedFile;
+            appendMessage('user', message + (currentFile ? ' [ছবি যুক্ত করা হয়েছে]' : ''));
+
             userInput.value = '';
             userInput.style.height = 'auto';
+            clearImage();
 
             sendBtn.disabled = true;
             statusDot.className = 'status-dot status-busy';
@@ -278,11 +354,27 @@
             const assistantMsg = appendMessage('assistant', '...');
 
             try {
+                let visionPrompt = "";
+                if (currentFile) {
+                    statusText.innerText = 'ছবি বিশ্লেষণ করা হচ্ছে...';
+                    const formData = new FormData();
+                    formData.append('image', currentFile);
+                    const visionResponse = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const visionData = await visionResponse.json();
+                    if (visionData.description) {
+                        visionPrompt = ` [ব্যবহারকারী একটি ছবি দিয়েছেন। ছবিতে দেখা যাচ্ছে: ${visionData.description}] `;
+                    }
+                }
+
+                statusText.innerText = 'শেখ চিন্তা করছে...';
                 const response = await fetch('/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        prompt: `<bos><think>${message}</think>`,
+                        prompt: `<bos><think>${visionPrompt}${message}</think>`,
                         max_new_tokens: 256
                     })
                 });

@@ -11,6 +11,9 @@ if ($path === '/' || $path === '/index.php') {
 } elseif ($path === '/generate') {
     header('Content-Type: application/json');
     handleGenerate();
+} elseif ($path === '/upload') {
+    header('Content-Type: application/json');
+    handleUpload();
 } elseif ($path === '/health') {
     header('Content-Type: application/json');
     echo json_encode(['status' => 'ok', 'model' => 'Sheikh-ABF']);
@@ -104,5 +107,41 @@ function handleGenerate() {
     } else {
         http_response_code($http_code ?: 500);
         echo json_encode(['error' => 'Model server error', 'details' => $response]);
+    }
+}
+
+function handleUpload() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method Not Allowed']);
+        return;
+    }
+
+    if (!isset($_FILES['image'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No image uploaded']);
+        return;
+    }
+
+    $image = $_FILES['image'];
+    $port = getenv('PORT') ?: '8000';
+    $url = "http://127.0.0.1:$port/describe_internal";
+
+    $cfile = new CURLFile($image['tmp_name'], $image['type'], $image['name']);
+    $data = array('file' => $cfile);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($http_code === 200) {
+        echo $response;
+    } else {
+        http_response_code($http_code ?: 500);
+        echo json_encode(['error' => 'Vision server error', 'details' => $response]);
     }
 }
